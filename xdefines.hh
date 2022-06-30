@@ -134,7 +134,7 @@ inline size_t aligndown(size_t addr, size_t alignto) { return (addr & ~(alignto 
 		(opts.over_prov_numerator - opts.over_prov_denominator) / opts.over_prov_numerator)
 #define DEFAULT_OVER_PROV_NUMERATOR 8
 #define DEFAULT_OVER_PROV_DENOMINATOR 7
-#define DEFAULT_RAND_GUARD_PROP 0.1		// 10% guard pages per bag
+#define DEFAULT_RAND_GUARD_PROP 0.1		// 10% (.1) guard pages per bag
 
 #define PAGESIZE 0x1000
 #define CACHE_LINE_SIZE 64
