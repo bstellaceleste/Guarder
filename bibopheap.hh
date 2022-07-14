@@ -537,22 +537,23 @@ private:
 					int i;
 					for (i = 0; i < BibopHeap::_overProvObjBufSize; i++)
 					{
-#ifdef RANDOM_GUARD
-						if( (_classSize % PAGESIZE) == 0 )
-						{	//PRINT("Guarder---------- random_guard classsize %lu", _classSize);
-							if ((_heapTop & PageMask) == 0)
-							{
-								tryRandomGuardPage(&_heapTop);
-							}
-						}
-#endif
 						// Use the top-of-bag pointer to satisfy this request
 						_nextObjs[i] = _heapTop;
 						// Bump the top-of-bag pointer to point to next object
 						_heapTop += _classSize;
-#ifdef ENABLE_GUARNARY
-						if( (_classSize % PAGESIZE) != 0 )
+
+						if( (_classSize % PAGESIZE) == 0 )
+						{	//PRINT("Guarder---------- random_guard classsize %lu", _classSize);
+#ifdef RANDOM_GUARD
+							if ((_heapTop & PageMask) == 0)
+							{
+								tryRandomGuardPage(&_heapTop);
+							}
+#endif
+						}
+						else if( (_classSize % PAGESIZE) != 0 )
 						{//PRINT("Guarder---------- guarnary classsize %lu subpg %d", _classSize, _subpage);
+#ifdef ENABLE_GUARNARY
 							if( ++_subpage >= 1/DEFAULT_RAND_GUARD_PROP )
 							{
 								uintptr_t cur_sp = _heapTop;
@@ -563,8 +564,8 @@ private:
 							
 								_heapTop = (((cur_sp >> 7) + 1) << 7);
 							}
-						}
 #endif
+						}
 					}
 					// Now kill a portion of these objects in accordance with
 					// the over-provisioning ratio
@@ -580,6 +581,7 @@ private:
 						}
 						_nextObjs[randIndex] = 0; // Mark selected index as a dead object
 					}
+					
 					_nextUp = 0;
 				}
 
@@ -1094,25 +1096,33 @@ public:
 	/****************************/
 	void get_pattern(PerThreadBag *bag) 
 	{
-		int num_page_spp;  //numero de la page qui contient la premère subpage protégée de la VMA
-		int num_page_start;  //numero de la premiere page de la VMA
+		int freq = 1 / DEFAULT_RAND_GUARD_PROP; 
 		uint32_t size = bag->classSize;
-		uintptr_t addr_start = (uintptr_t)_heapBegin + bag->startOffset;
-		int num_subpage = 0, freq = 1 / DEFAULT_RAND_GUARD_PROP; 
-		void *subpage;
+		unsigned long tmp = ((size * freq) % 128) == 0 ? (size * freq) / 128 : (size * freq) / 128 + 1;
+		bag->pattern = tmp + 1;
+		PRINT("Guarder-------- size %lu - pattern %d", size, bag->pattern);
+		// uint32_t num_page_spp;  //numero de la page qui contient la premère subpage protégée de la VMA
+		// uint32_t num_page_start;  //numero de la premiere page de la VMA
+		// uint32_t size = bag->classSize;
+		// uintptr_t addr_start = (uintptr_t)_heapBegin + bag->startOffset;
+		// int num_subpage = 0, freq = 1 / DEFAULT_RAND_GUARD_PROP; 
+		// void *subpage;
 		
-		subpage = (void*) (addr_start + (uint64_t)(freq*size));	//@ of 1st protected subpage
-		num_page_spp = ((uint64_t) subpage) >> 12;
-		num_page_start = addr_start >> 12;
+		// subpage = (void*) (addr_start + (uint64_t)(freq*size));	//@ of 1st protected subpage
+		// num_page_spp = ((uint64_t) subpage) >> 12; PRINT("Guarder-------- num_pg_spp %lu", num_page_spp);
+		// num_page_start = addr_start >> 12; PRINT("Guarder-------- num_pg_start %lu", num_page_start);
 
-		/* #subpages entre la 1re subpage protégée et la 1re page de la VMA */
-		int nb_subpage = (num_page_spp - num_page_start)*32; //
+		// /* #subpages entre la 1re subpage protégée et la 1re page de la VMA */
+		// int nb_subpage = (num_page_spp - num_page_start)*32; PRINT("Guarder-------- nb_spg %d", nb_subpage);//
 
-		if( ((uint64_t) subpage % 128) != 0 )
-			subpage = (void*) ((((uint64_t) subpage >> 7) + 1) << 7);
-		num_subpage = ((uint64_t) subpage & 0xfff) >> 7;//index of the subpage within the page (5 most significant bits)
+		// if( ((uint64_t) subpage % 128) != 0 )
+		// 	{
+		// 		subpage = (void*) ((((uint64_t) subpage >> 7) + 1) << 7);
+		// 		PRINT("Guarder-------- subpg_in_pg %d", subpage);
+		// 	}
+		// num_subpage = ((uint64_t) subpage & 0xfff) >> 7; PRINT("Guarder-------- num_spg %d", num_subpage);//index of the subpage within the page (5 most significant bits)
 
-		bag->pattern = nb_subpage + num_subpage + 1;
+		// bag->pattern = nb_subpage + num_subpage + 1; PRINT("Guarder-------- size %lu - pattern %d", size, bag->pattern);
 		//PRINT("Guarder------- pattern %d", bag->pattern);
 	}
 	/****************************/
@@ -1216,7 +1226,7 @@ public:
 		//PRINT("Guarder------- allocateSmallObject(%zu): threadIndex = %d, bagNum = %d, class size = %lu, freq = %d", sz, curBag->threadIndex, curBag->bagNum, curBag->classSize, curBag->frequency);
 
 		void *object = curCache.malloc();
-
+		//PRINT("Guarder------------ @ %lx - size %lu - pattern %d", (unsigned long)object, curBag->classSize, curBag->pattern);
 		return object;
 	}
 

@@ -105,6 +105,8 @@ public:
 
 		PRDBG("BigHeap returning 0x%lx (begins @ %p), size %zu (actual %zu, usable %zu)",
 						userStartPtr, ptr, size, pageUpSize, objStatus->usableSize);
+		PRINT("Guarder------------ allocated %p - %lx", (void *)userStartPtr, userStartPtr);
+
 		return (void *)userStartPtr;
 	}
 

@@ -317,7 +317,7 @@ void xxfree(void *ptr)
 	{
 		PRERR("invalid free on address %p", ptr);
 	}
-	PRINT("Guarder------#pg: %lu - #gp: %d", bagsize/PAGESIZE, nb_gp);
+	//PRINT("Guarder------#pg: %lu - #gp: %d", bagsize/PAGESIZE, nb_gp);
 }
 
 void *xxcalloc(size_t nelem, size_t elsize)
